@@ -26,7 +26,7 @@
     <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-2">Sila pastikan tab asal sistem RELA tidak ditutup.</p>
   </div>
 
-  <!-- Header Pemantauan -->
+  <!-- Header Kawalan Laporan -->
   <header class="glass-header p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 z-20 shrink-0 shadow-2xl">
     <div class="flex items-center gap-4">
       <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 rotate-3">
@@ -50,7 +50,7 @@
     </div>
   </header>
 
-  <!-- Frame Paparan PDF Sandbox -->
+  <!-- Kawasan Pratonton PDF -->
   <main class="flex-1 p-4 bg-slate-950 relative flex justify-center">
     <iframe id="pdf-frame" class="w-full h-full rounded-2xl border border-white/5 shadow-2xl hidden" style="background-color: #525659;"></iframe>
     <div id="fallback-container" class="hidden absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
@@ -65,10 +65,9 @@
     let pdfUrl = null;
     let reportName = "laporan.pdf";
 
-    // 1. Apabila tetingkap dibuka, mulakan protokol jabat tangan (Handshake) dengan penghantar asal (opener)
+    // Mula jabat tangan (Handshake) sebaik sahaja tab preview dimuatkan
     window.addEventListener('load', () => {
       if (window.opener) {
-        // Beritahu tab Google Apps Script bahawa kita sedia menerima payload
         window.opener.postMessage({ type: 'PREVIEW_READY' }, '*');
       } else {
         document.getElementById('loading-overlay').innerHTML = `
@@ -81,7 +80,7 @@
       }
     });
 
-    // 2. Mendengar penghantaran data Base64 PDF dari aplikasi utama
+    // Menunggu pancaran payload PDF (Base64) dari index.html
     window.addEventListener('message', (event) => {
       const payload = event.data;
       if (payload && payload.type === 'PDF_DATA') {
@@ -90,7 +89,7 @@
           document.getElementById('report-title').innerText = payload.title || "PRATONTON LAPORAN";
           document.getElementById('report-filename').innerText = reportName;
 
-          // Tukar Base64 DataURI kepada Blob
+          // Dekod Base64 kepada Blob PDF
           const base64Data = payload.data.split(',')[1];
           const byteCharacters = atob(base64Data);
           const byteNumbers = new Array(byteCharacters.length);
@@ -101,10 +100,16 @@
           pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
           pdfUrl = URL.createObjectURL(pdfBlob);
 
-          // Masukkan ke iFrame untuk paparan terus (Jika disokong oleh browser peranti)
           const iframe = document.getElementById('pdf-frame');
-          iframe.src = pdfUrl;
-          iframe.classList.remove('hidden');
+          // Semak jika peranti menyokong rendering PDF di dalam iFrame (Desktop)
+          const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+          
+          if (isMobile) {
+            document.getElementById('fallback-container').classList.remove('hidden');
+          } else {
+            iframe.src = pdfUrl;
+            iframe.classList.remove('hidden');
+          }
 
           // Sembunyikan Loading Overlay secara lembut
           const overlay = document.getElementById('loading-overlay');
@@ -115,7 +120,7 @@
           console.error(e);
           Swal.fire({
             title: 'Ralat Dekripsi',
-            text: 'Gagal mendekod data laporan daripada bilik kebal GAS. Sila jana semula.',
+            text: 'Gagal mendekod data laporan daripada GAS. Sila jana semula.',
             icon: 'error',
             confirmButtonColor: '#3b82f6',
             background: '#1e293b',
@@ -139,14 +144,20 @@
     }
 
     function printPDF() {
-      const iframe = document.getElementById('pdf-frame');
-      if (iframe && pdfUrl) {
-        try {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-        } catch (e) {
-          // Fallback jika iframe print disekat cross-origin pelayar peranti
+      if (pdfUrl) {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
           window.open(pdfUrl, '_blank');
+        } else {
+          const iframe = document.getElementById('pdf-frame');
+          if (iframe) {
+            try {
+              iframe.contentWindow.focus();
+              iframe.contentWindow.print();
+            } catch (e) {
+              window.open(pdfUrl, '_blank');
+            }
+          }
         }
       }
     }
