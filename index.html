@@ -17,7 +17,7 @@
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
-<body class="flex flex-col h-full bg-slate-900 overflow-hidden">
+<body class="flex flex-col h-screen bg-slate-900 overflow-hidden">
 
   <!-- ================= LOADING OVERLAY ================= -->
   <div id="loading-overlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 transition-all duration-500">
@@ -52,7 +52,7 @@
 
   <!-- Kawasan Pratonton PDF -->
   <main class="flex-1 p-4 bg-[#090d16] relative flex justify-center">
-    <iframe id="pdf-frame" class="w-full h-full rounded-2xl border border-white/5 shadow-2xl hidden" style="background-color: #090d16;"></iframe>
+    <iframe id="pdf-frame" class="w-full h-full rounded-2xl border border-white/5 shadow-2xl hidden" style="background-color: #090d16; border: none; outline: none; overflow: hidden;"></iframe>
     <div id="fallback-container" class="hidden absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
       <i class="fas fa-file-invoice-dollar text-5xl text-slate-500 mb-4 animate-bounce"></i>
       <h3 class="text-sm font-black uppercase tracking-widest text-slate-300">Dokumen Sedia Untuk Diproses</h3>
@@ -107,15 +107,17 @@
           if (isMobile) {
             document.getElementById('fallback-container').classList.remove('hidden');
           } else {
-            // SUNTIKAN PARAMETER BEBAS SCROLL: Auto-fit ke bingkai dan sembunyikan toolbar pelayar asal
-            iframe.src = pdfUrl + '#view=Fit&toolbar=0&navpanes=0';
+            // SUNTIKAN PARAMETER BEBAS SCROLL: Auto-fit ke lebar halaman (FitH) dan sembunyikan bar alat tambahan
+            iframe.src = pdfUrl + '#view=FitH&toolbar=0&navpanes=0';
             iframe.classList.remove('hidden');
           }
 
           // Sembunyikan Loading Overlay secara lembut
           const overlay = document.getElementById('loading-overlay');
-          overlay.classList.add('opacity-0', 'pointer-events-none');
-          setTimeout(() => overlay.remove(), 500);
+          if (overlay) {
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => overlay.remove(), 500);
+          }
 
           // PENGESAHAN JABAT TANGAN DUA HALA: Balas mesej resit untuk mengelakkan timeout di aplikasi utama
           if (window.opener) {
